@@ -9,8 +9,9 @@
     "milanuncios_ciudad": "alicante",
     "municipios_validos": ["Alicante", "Alacant", "Santa Pola"]
   },
+  "_comentario_pisos_com": "El /asc/ del final es importante, no solo cosmético: pisos.com deja de respetar el filtro de precio a partir de cierta página (se ha visto devolver pisos de hasta 3.000 €/mes en páginas avanzadas), pero ordenado ascendente lo barato queda siempre en la primera página, así que el bot puede parar en cuanto ve un precio por encima del tope.",
   "pisos_com_urls": [
-    "https://www.pisos.com/alquiler-residencial/pisos-alicante/hasta-750/",
-    "https://www.pisos.com/alquiler-residencial/pisos-santa_pola/hasta-750/"
+    "https://www.pisos.com/alquiler-residencial/pisos-alicante/hasta-750/asc/",
+    "https://www.pisos.com/alquiler-residencial/pisos-santa_pola/hasta-750/asc/"
   ]
 }

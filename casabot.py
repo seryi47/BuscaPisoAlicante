@@ -39,6 +39,7 @@ HISTORICO = os.path.join(RAIZ, "historico.json")
 CONFIG = os.path.join(RAIZ, "config.json")
 UMBRAL = 1.0  # € de bajada mínima para que merezca un aviso
 MAX_PAGINAS_MILANUNCIOS = 40  # salvaguarda: la provincia entera son ~28 hoy
+MAX_PAGINAS_PISOSCOM = 20  # salvaguarda: hoy son ~10 páginas por zona
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
@@ -133,14 +134,14 @@ def _pisos_pagina(pg, url_base, n):
     return pg.locator(".ad-preview").all()
 
 
-def buscar_pisos_com(urls, municipios_validos):
+def buscar_pisos_com(urls, municipios_validos, precio_max):
     out = []
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True)
         pg = b.new_page(user_agent=UA)
         for url_base in urls:
             n = 1
-            while True:
+            while n <= MAX_PAGINAS_PISOSCOM:
                 try:
                     tarjetas = _pisos_pagina(pg, url_base, n)
                 except Exception as e:
@@ -148,6 +149,7 @@ def buscar_pisos_com(urls, municipios_validos):
                     break
                 if not tarjetas:
                     break
+                alguno_en_presupuesto = False
                 for c in tarjetas:
                     try:
                         t = " ".join(c.inner_text().split())
@@ -157,6 +159,8 @@ def buscar_pisos_com(urls, municipios_validos):
                     if not mp:
                         continue
                     precio = float(mp.group(1).replace(".", "").replace(",", "."))
+                    if precio <= precio_max:
+                        alguno_en_presupuesto = True
                     mh = _RE_HAB.search(t)
                     mm = _RE_M2.search(t)
                     # El municipio real va SIEMPRE entre el título y "N hab."
@@ -193,6 +197,15 @@ def buscar_pisos_com(urls, municipios_validos):
                 # pisos.com no avisa de "última página" con un código especial:
                 # si una página no trae 30 tarjetas, ya no hay más.
                 if len(tarjetas) < 30:
+                    break
+                # Las URLs llevan /asc/ (precio ascendente) precisamente para
+                # esto: pisos.com deja de respetar el filtro "hasta-750" a
+                # partir de cierta página (se ha visto devolver pisos de
+                # hasta 3.000 €/mes ahí), pero ordenado ascendente, si en TODA
+                # una página no hay ni un piso dentro de presupuesto, ya no lo
+                # va a haber en las siguientes: se para en vez de seguir
+                # escaneando páginas irrelevantes hasta el límite de seguridad.
+                if not alguno_en_presupuesto:
                     break
                 n += 1
                 time.sleep(1)
@@ -246,7 +259,8 @@ def main():
     print("  [milanuncios] %d anuncios en zona" % len(pisos_milanuncios))
 
     print("  buscando en pisos.com...")
-    pisos_pisoscom = buscar_pisos_com(cfg["pisos_com_urls"], cfg["zonas"]["municipios_validos"])
+    pisos_pisoscom = buscar_pisos_com(cfg["pisos_com_urls"], cfg["zonas"]["municipios_validos"],
+                                      cfg["precio_max"])
     print("  [pisos.com] %d anuncios en zona" % len(pisos_pisoscom))
 
     todos = [p for p in (pisos_milanuncios + pisos_pisoscom) if aplica_filtros(p, cfg)]
