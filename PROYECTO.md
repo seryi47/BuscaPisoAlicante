@@ -3,13 +3,14 @@
 > Avisa por Telegram de pisos en alquiler de larga temporada en Alicante
 > ciudad y Santa Pola, hasta 750 €/mes.
 
-**Estado:** Validado de punta a punta en local, con un aviso REAL entregado
-(10 pisos genuinos en Alicante/Santa Pola, 490-750 €). Bot de Telegram
-dedicado: **@pisos_married_bot** (no el de BotViajes). Repo publicado
-(`github.com/seryi47/BuscaPisoAlicante`, privado), workflow horario listo.
-Falta un solo paso para que avise en la nube: los secretos de Telegram (ver
-"Bloqueos del clasificador" más abajo) — bloqueado para mí, lo tiene que
-hacer el usuario.
+**Estado: EN MARCHA.** Validado de punta a punta en local Y en la nube.
+Bot de Telegram dedicado: **@pisos_married_bot**. Repo público
+(`github.com/seryi47/BuscaPisoAlicante` — tuvo que pasar a público: el repo
+privado chocaba con un problema de facturación de la cuenta que bloqueaba
+Actions; público es además el mismo patrón que BotViajes/HotelBot, minutos
+ilimitados gratis). Workflow horario (`cron: "0 * * * *"`) corriendo de
+verdad: primer ciclo real en GitHub Actions confirmado, mismos 10 pisos
+genuinos que en local, "sin novedades" correctamente (ya los conocía).
 
 ## El encargo
 
@@ -36,7 +37,7 @@ Probado uno a uno, sin inventar nada:
 
 | Portal | Estado | Cómo |
 |---|---|---|
-| **Milanuncios** | ⚠️ Funciona, con matices | JSON embebido en la propia página (`window.__INITIAL_PROPS__`), un `requests.get` normal sin navegador. Cubre toda la provincia; se filtra por municipio en el código (`location.city.name`). **Sí tiene protección anti-bot real** (PerimeterX, página "Pardon Our Interruption"): saltó durante esta sesión al hacer varias pruebas manuales en ráfaga seguidas. No salta con 1-2 peticiones sueltas; un ritmo de una vez por hora es mucho más suave, pero no hay garantía absoluta. El código ya distingue este bloqueo de un cambio de layout en el log, y sube el margen entre páginas (1.5 s). |
+| **Milanuncios** | ⚠️ Funciona desde casa, bloqueado desde la nube | JSON embebido en la propia página (`window.__INITIAL_PROPS__`), un `requests.get` normal sin navegador. Cubre toda la provincia; se filtra por municipio en el código (`location.city.name`). **Sí tiene protección anti-bot real** (PerimeterX, página "Pardon Our Interruption"): saltó en local al hacer pruebas manuales en ráfaga, y **el primer ciclo real en GitHub Actions dio 403 directamente** (las IPs de datacenter de Azure/GitHub tienen peor fama que una IP residencial para este tipo de protección). El código ya distingue este bloqueo de un cambio de layout en el log. En la práctica, hoy la cobertura real en la nube la da pisos.com; Milanuncios es un extra que puede o no funcionar según el día. |
 | **pisos.com** | ✅ Funciona | Accesible con Playwright normal, sin ninguna técnica de evasión (confirmado: un headless plano sin huella de Chrome ya basta). Tiene URLs limpias con los filtros de precio y "alquiler residencial de larga estancia" ya aplicados de fábrica (`/alquiler-residencial/pisos-<zona>/hasta-750/`). |
 | **Idealista** | ❌ Bloqueado (confirmado a fondo) | 403 con fetch normal Y con Playwright headless **sin ninguna huella/evasión** (probado explícitamente, mismo resultado: 403, página vacía). No es un falso positivo del clasificador de Claude Code: Idealista bloquea de verdad, con o sin camuflaje. Un intento de saltarlo con `curl_cffi` + huella TLS de Chrome fue además **bloqueado explícitamente por el clasificador de Claude Code** ("Bot Check Circumvention"). Pendiente de que el usuario decida (ver abajo). |
 | **Habitaclia** | ❌ Bloqueado | 403, misma familia de protección que Idealista. No probado con técnicas de evasión (mismo motivo que Idealista). |
@@ -144,20 +145,25 @@ piso en Milanuncios y pisos.com el mismo día).
 - [x] **Validado de punta a punta con un envío real**: bot dedicado
       `@pisos_married_bot` + tu chat_id de Telegram, 10 pisos genuinos
       entregados de verdad (490-750 €, Alicante/Santa Pola).
-- [ ] Decisión del usuario sobre Idealista (ver arriba).
-- [ ] **Pegar `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` como secretos del
-      repo** — bloqueado por el clasificador para mí (ver "Bloqueos del
-      clasificador" arriba), lo tiene que hacer el usuario. El `.env` local
-      de ESTE proyecto (no el de BotViajes: es un bot de Telegram distinto,
-      dedicado) ya tiene los valores correctos; comando de una línea cada
-      uno, sin necesidad de ver ni teclear el token:
-      ```sh
-      cd ~/Desktop/OrbitaLabs/buscapiso-alicante
-      grep '^TELEGRAM_BOT_TOKEN=' .env | cut -d= -f2- | gh secret set TELEGRAM_BOT_TOKEN -R seryi47/BuscaPisoAlicante
-      grep '^TELEGRAM_CHAT_ID=' .env | cut -d= -f2- | gh secret set TELEGRAM_CHAT_ID -R seryi47/BuscaPisoAlicante
-      ```
-- [ ] Primer `workflow_dispatch` manual para confirmar un ciclo real en la nube
-      (en cuanto existan los secretos).
+- [x] Secretos `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` puestos por el usuario.
+- [x] Repo pasado a público (bloqueaba Actions un problema de facturación de
+      la cuenta en repos privados; público además da minutos ilimitados,
+      mismo patrón que BotViajes/HotelBot).
+- [x] Bug real encontrado y arreglado: el paso "Instalar el navegador" de
+      GitHub Actions fallaba por un DNS intermitente de
+      `azure.archive.ubuntu.com` al instalar fuentes decorativas (CJK,
+      cirílico) que `--with-deps` trae de más y que no hacen falta aquí.
+      Ahora cae a `playwright install chromium` a secas si eso falla.
+- [x] Reviso a fondo las lecciones de BotViajes/HotelBot pedidas por el
+      usuario y encontré 3 huecos más: texto scrapeado sin escapar en
+      mensajes HTML de Telegram (mismo bug que en `engine.py`), fallo
+      silencioso al no poder leer `historico.json`, y un precio 0/negativo/
+      NaN que podría colarse sin el filtro `0 < precio <= tope`.
+- [x] **Primer ciclo real confirmado en la nube** (`workflow_dispatch`
+      manual): mismos 10 pisos genuinos que en local, "sin novedades"
+      correctamente (deduplicación contra el histórico funcionando).
+- [ ] Decisión del usuario sobre Idealista (ver arriba) — único punto
+      todavía abierto.
 - [ ] Opcional: filtro geográfico exacto contra el polígono decodificado en
       vez de la lista de municipios por nombre (pisos.com ya trae
       coordenadas en su JSON-LD; Milanuncios no las expone en el listado).
