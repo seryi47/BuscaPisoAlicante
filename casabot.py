@@ -5,15 +5,22 @@ el usuario, decodificado localmente ya que Idealista bloquea el acceso
 automatizado). Avisa por Telegram de pisos NUEVOS, BAJADAS de precio y
 pisos que VUELVEN a estar disponibles tras desaparecer.
 
-Fuentes activas (confirmadas accesibles sin técnicas de evasión):
-  - Milanuncios: JSON embebido en la propia página (window.__INITIAL_PROPS__),
-    sin bloqueo. Cubre toda la provincia; se filtra por municipio en el código.
-  - pisos.com: accesible con Playwright normal (sin huella/evasión). Tiene
-    URLs limpias y reutilizables con los filtros de precio y "alquiler
-    residencial de larga estancia" ya aplicados (ver config.json).
+Fuentes activas (sin necesitar huella de Chrome ni ninguna técnica de
+evasión deliberada):
+  - Milanuncios: JSON embebido en la propia página (window.__INITIAL_PROPS__).
+    OJO: sí tiene protección (PerimeterX, página "Pardon Our Interruption"),
+    solo que no salta con 1-2 peticiones sueltas; saltó en pruebas manuales
+    en ráfaga. Un poll real de una vez por hora es mucho más suave, pero no
+    hay garantía de que nunca la dispare — por eso el ritmo entre páginas es
+    deliberadamente lento y cualquier bloqueo se distingue en el log de un
+    cambio real de layout.
+  - pisos.com: accesible con Playwright normal. Tiene URLs limpias y
+    reutilizables con los filtros de precio y "alquiler residencial de larga
+    estancia" ya aplicados (ver config.json).
 
-Fuentes bloqueadas por anti-bot real (DataDome/CloudFront/similar), pendientes
-de que el usuario decida cómo abordarlas: Idealista, Habitaclia, Fotocasa,
+Fuentes bloqueadas de forma dura e inmediata (DataDome/CloudFront/similar),
+pendientes de que el usuario decida cómo abordarlas: Idealista (confirmado
+403 incluso con Playwright honesto, sin huella), Habitaclia, Fotocasa,
 Yaencontre. Ver PROYECTO.md.
 """
 import json
@@ -57,8 +64,12 @@ def _milanuncios_pagina(n):
         return [], 0
     m = _RE_PROPS.search(r.text)
     if not m:
-        print("  [milanuncios] no encontré window.__INITIAL_PROPS__ en la página %d "
-              "(¿cambió el layout?)" % n)
+        if "pardon our interruption" in r.text.lower() or "press & hold" in r.text.lower():
+            print("  [milanuncios] bloqueado por protección anti-bot (PerimeterX) en la "
+                  "página %d; no es un cambio de layout, se reintenta en el próximo ciclo" % n)
+        else:
+            print("  [milanuncios] no encontré window.__INITIAL_PROPS__ en la página %d "
+                  "(¿cambió el layout?)" % n)
         return [], 0
     try:
         data = json.loads(m.group(1).encode().decode("unicode_escape"))
@@ -81,7 +92,7 @@ def buscar_milanuncios(municipios_validos):
         if not more:
             break
         todas.extend(more)
-        time.sleep(0.5)
+        time.sleep(1.5)
     for a in todas:
         ciudad = ((a.get("location") or {}).get("city") or {}).get("name") or ""
         if not any(muni.lower() in ciudad.lower() or ciudad.lower() in muni.lower()
@@ -146,13 +157,21 @@ def buscar_pisos_com(urls, municipios_validos):
                     if not mp:
                         continue
                     precio = float(mp.group(1).replace(".", "").replace(",", "."))
-                    zonas = _RE_ZONA.findall(t)
+                    mh = _RE_HAB.search(t)
+                    mm = _RE_M2.search(t)
+                    # El municipio real va SIEMPRE entre el título y "N hab."
+                    # (p.ej. "... Centro-Zona Alta (Alcoi - Alcoy) 1 hab. ...").
+                    # Buscar el paréntesis en toda la tarjeta es un error real
+                    # ya detectado: la descripción libre de después puede
+                    # mencionar la PROVINCIA entre paréntesis ("ibi (alicante)")
+                    # y eso colaba un piso de Ibi como si fuera de Alicante
+                    # ciudad. Cortar antes de "hab." lo evita.
+                    corte = mh.start() if mh else len(t)
+                    zonas = _RE_ZONA.findall(t[:corte])
                     municipio = zonas[-1] if zonas else ""
                     if municipios_validos and not any(
                             muni.lower() in municipio.lower() for muni in municipios_validos):
                         continue
-                    mh = _RE_HAB.search(t)
-                    mm = _RE_M2.search(t)
                     href = None
                     try:
                         href = c.locator("a").first.get_attribute("href")
