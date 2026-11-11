@@ -34,7 +34,14 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Instalar el navegador
-        run: playwright install --with-deps chromium
+        # --with-deps instala también fuentes opcionales (CJK, cirílico) que
+        # no hacen falta para nada aquí; si el mirror de apt de turno falla
+        # en descargar justo una de esas (visto dos veces seguidas: DNS
+        # intermitente de azure.archive.ubuntu.com), el paso entero fallaba
+        # aunque las librerías realmente necesarias ya se hubieran instalado.
+        # Con el navegador solo (sin --with-deps) basta en los runners de
+        # GitHub, que ya traen esas librerías de base.
+        run: playwright install --with-deps chromium || playwright install chromium
 
       - name: Vigilar
         env:
