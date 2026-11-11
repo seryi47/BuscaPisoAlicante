@@ -15,7 +15,10 @@ Idealista: scraping descartado del todo (protección real + bloqueado por el
 clasificador + API oficial solo para socios); en su lugar, `idealista_relay.py`
 ya está escrito y conectado al workflow, a falta de que el usuario guarde la
 búsqueda en su cuenta de Idealista y dé de alta `GMAIL_ADDRESS`/
-`GMAIL_APP_PASSWORD`.
+`GMAIL_APP_PASSWORD`. **Tercera fuente añadida: enalquiler.com** (portal
+especializado solo en alquiler), encontrada a petición del usuario tras
+pedir explícitamente explorar todas las opciones legítimas posibles — ya
+integrada y probada con pisos reales de verdad.
 
 ## El encargo
 
@@ -44,6 +47,7 @@ Probado uno a uno, sin inventar nada:
 |---|---|---|
 | **Milanuncios** | ⚠️ Funciona desde casa, bloqueado desde la nube | JSON embebido en la propia página (`window.__INITIAL_PROPS__`), un `requests.get` normal sin navegador. Cubre toda la provincia; se filtra por municipio en el código (`location.city.name`). **Sí tiene protección anti-bot real** (PerimeterX, página "Pardon Our Interruption"): saltó en local al hacer pruebas manuales en ráfaga, y **el primer ciclo real en GitHub Actions dio 403 directamente** (las IPs de datacenter de Azure/GitHub tienen peor fama que una IP residencial para este tipo de protección). El código ya distingue este bloqueo de un cambio de layout en el log. En la práctica, hoy la cobertura real en la nube la da pisos.com; Milanuncios es un extra que puede o no funcionar según el día. |
 | **pisos.com** | ✅ Funciona | Accesible con Playwright normal, sin ninguna técnica de evasión (confirmado: un headless plano sin huella de Chrome ya basta). Tiene URLs limpias con los filtros de precio y "alquiler residencial de larga estancia" ya aplicados de fábrica (`/alquiler-residencial/pisos-<zona>/hasta-750/`). |
+| **enalquiler.com** | ✅ Funciona | Portal especializado SOLO en alquiler (no venta), 18.403 anuncios activos en España. Encontrado inspeccionando las peticiones de red reales de su app Angular: `https://www.enalquiler.com/search?provincia=3&tipo=2&precio_max=750&page=N`, URL limpia y reutilizable. El municipio se saca del propio slug de la URL del anuncio (`/alquiler_piso_<municipio>/...`), no de texto libre — más fiable todavía que pisos.com, evita de raíz el bug de Ibi/Castalla. |
 | **Idealista** | ❌ Bloqueado (confirmado a fondo) | 403 con fetch normal Y con Playwright headless **sin ninguna huella/evasión** (probado explícitamente, mismo resultado: 403, página vacía). No es un falso positivo del clasificador de Claude Code: Idealista bloquea de verdad, con o sin camuflaje. Un intento de saltarlo con `curl_cffi` + huella TLS de Chrome fue además **bloqueado explícitamente por el clasificador de Claude Code** ("Bot Check Circumvention"). Pendiente de que el usuario decida (ver abajo). |
 | **Habitaclia** | ❌ Bloqueado | 403, misma familia de protección que Idealista. No probado con técnicas de evasión (mismo motivo que Idealista). |
 | **Fotocasa** | ❌ Bloqueado | 403 de CloudFront incluso con Playwright headless SIN ninguna huella especial — tiene WAF real, no es solo una SPA en JS como parecía al principio. |

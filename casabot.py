@@ -17,11 +17,17 @@ evasión deliberada):
   - pisos.com: accesible con Playwright normal. Tiene URLs limpias y
     reutilizables con los filtros de precio y "alquiler residencial de larga
     estancia" ya aplicados (ver config.json).
+  - enalquiler.com: portal especializado SOLO en alquiler. API interna
+    descubierta por inspección de red (`/search/ajax/search` para datos
+    secundarios; los anuncios van en el HTML normal de `/search?...`), con
+    `precio_max` como parámetro de URL limpio. El municipio se saca del
+    propio slug de la URL del anuncio (`/alquiler_piso_<municipio>/...`),
+    no de texto libre — evita el bug de Ibi/Castalla ya visto en pisos.com.
 
 Fuentes bloqueadas de forma dura e inmediata (DataDome/CloudFront/similar),
 pendientes de que el usuario decida cómo abordarlas: Idealista (confirmado
 403 incluso con Playwright honesto, sin huella), Habitaclia, Fotocasa,
-Yaencontre. Ver PROYECTO.md.
+Yaencontre, easyrentalicante.com. Ver PROYECTO.md.
 """
 import html
 import json
@@ -49,6 +55,7 @@ CONFIG = os.path.join(RAIZ, "config.json")
 UMBRAL = 1.0  # € de bajada mínima para que merezca un aviso
 MAX_PAGINAS_MILANUNCIOS = 40  # salvaguarda: la provincia entera son ~28 hoy
 MAX_PAGINAS_PISOSCOM = 20  # salvaguarda: hoy son ~10 páginas por zona
+MAX_PAGINAS_ENALQUILER = 20  # salvaguarda: hoy son ~14 páginas (211 ÷ 15)
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
@@ -222,6 +229,78 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
     return out
 
 
+# ---- enalquiler.com -----------------------------------------------------------
+
+_RE_PRECIO_ENQ = re.compile(r"\d+/\d+\s*(\d+)\s*€")
+_RE_M2_ENQ = re.compile(r"(\d+)\s*m2")
+_RE_HAB_ENQ = re.compile(r"(\d+)\s*Hab")
+_RE_MUNICIPIO_ENQ = re.compile(r"/alquiler_piso_([a-z0-9_-]+)/")
+
+
+def buscar_enalquiler(municipios_validos, precio_max):
+    out = []
+    url_base = "https://www.enalquiler.com/search?provincia=3&tipo=2&precio_max=%d" % precio_max
+    with sync_playwright() as p:
+        b = p.chromium.launch(headless=True)
+        pg = b.new_page(user_agent=UA)
+        n = 1
+        while n <= MAX_PAGINAS_ENALQUILER:
+            try:
+                pg.goto("%s&page=%d" % (url_base, n), timeout=45000, wait_until="domcontentloaded")
+                pg.wait_for_timeout(2500)
+                tarjetas = pg.locator("li.propertyCard").all()
+            except Exception as e:
+                print("  [enalquiler] error en página %d: %s" % (n, str(e)[:120]))
+                break
+            if not tarjetas:
+                break
+            for c in tarjetas:
+                try:
+                    t = " ".join(c.inner_text().split())
+                except Exception:
+                    continue
+                try:
+                    href = c.locator("a").first.get_attribute("href")
+                except Exception:
+                    href = None
+                if not href:
+                    continue
+                # El municipio sale del propio slug de la URL, no de texto
+                # libre: es justo lo que evita el bug de Ibi/Castalla ya
+                # encontrado en pisos.com (una descripción libre mencionando
+                # la provincia entre paréntesis colaba el municipio mal).
+                mm_muni = _RE_MUNICIPIO_ENQ.search(href)
+                municipio = mm_muni.group(1).replace("-", " ") if mm_muni else ""
+                if municipios_validos and not any(
+                        muni.lower() in municipio.lower() for muni in municipios_validos):
+                    continue
+                mp = _RE_PRECIO_ENQ.search(t)
+                if not mp:
+                    continue
+                mh = _RE_HAB_ENQ.search(t)
+                mm2 = _RE_M2_ENQ.search(t)
+                # El título real empieza justo después de "N Baño(s)"; todo
+                # lo de antes es la ficha (fotos, precio, m², habitaciones).
+                mb = re.search(r"\d+\s*Baños?\s*", t)
+                titulo = t[mb.end():] if mb else t
+                out.append({
+                    "fuente": "enalquiler.com",
+                    "id": "enalquiler.com-%s" % href,
+                    "titulo": titulo[:120],
+                    "municipio": municipio,
+                    "precio": float(mp.group(1)),
+                    "habitaciones": int(mh.group(1)) if mh else None,
+                    "m2": int(mm2.group(1)) if mm2 else None,
+                    "url": href,
+                })
+            if len(tarjetas) < 15:
+                break
+            n += 1
+            time.sleep(1)
+        b.close()
+    return out
+
+
 # ---- filtros y dedupe cruzado -------------------------------------------------
 
 def aplica_filtros(p, cfg):
@@ -279,7 +358,11 @@ def main():
                                       cfg["precio_max"])
     print("  [pisos.com] %d anuncios en zona" % len(pisos_pisoscom))
 
-    todos = [p for p in (pisos_milanuncios + pisos_pisoscom) if aplica_filtros(p, cfg)]
+    print("  buscando en enalquiler.com...")
+    pisos_enalquiler = buscar_enalquiler(cfg["zonas"]["municipios_validos"], cfg["precio_max"])
+    print("  [enalquiler] %d anuncios en zona" % len(pisos_enalquiler))
+
+    todos = [p for p in (pisos_milanuncios + pisos_pisoscom + pisos_enalquiler) if aplica_filtros(p, cfg)]
     todos = quitar_duplicados_cruzados(todos)
     print("  %d anuncios tras filtros y deduplicado cruzado" % len(todos))
 
@@ -336,12 +419,12 @@ def main():
         json.dump(historico, fh, ensure_ascii=False, indent=1)
     os.replace(tmp, HISTORICO)
 
-    if not pisos_milanuncios and not pisos_pisoscom:
-        print("  CEGUERA: 0 anuncios en ambas fuentes, algo se rompió")
+    if not pisos_milanuncios and not pisos_pisoscom and not pisos_enalquiler:
+        print("  CEGUERA: 0 anuncios en las 3 fuentes, algo se rompió")
         if destino:
-            notifier.telegram(destino, "⚠️ <b>BuscaPiso no ve nada</b>\nMilanuncios y pisos.com han "
-                                        "devuelto 0 anuncios a la vez. Puede que hayan cambiado el "
-                                        "layout o esté bloqueado.")
+            notifier.telegram(destino, "⚠️ <b>BuscaPiso no ve nada</b>\nMilanuncios, pisos.com y "
+                                        "enalquiler.com han devuelto 0 anuncios a la vez. Puede que "
+                                        "hayan cambiado el layout o esté bloqueado.")
         return 1
 
     if not avisos:
