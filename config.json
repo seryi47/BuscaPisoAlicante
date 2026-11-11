@@ -1,0 +1,16 @@
+{
+  "precio_max": 750,
+  "habitaciones_min": null,
+  "m2_min": null,
+  "amueblado": null,
+  "tipo": null,
+  "_comentario": "null = sin filtro duro en ese campo (se muestra el dato en el aviso, pero no descarta el anuncio). Cambia estos valores sin tocar código.",
+  "zonas": {
+    "milanuncios_ciudad": "alicante",
+    "municipios_validos": ["Alicante", "Alacant", "Santa Pola"]
+  },
+  "pisos_com_urls": [
+    "https://www.pisos.com/alquiler-residencial/pisos-alicante/hasta-750/",
+    "https://www.pisos.com/alquiler-residencial/pisos-santa_pola/hasta-750/"
+  ]
+}

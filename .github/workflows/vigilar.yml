@@ -1,0 +1,63 @@
+name: Vigilar pisos Alicante/Santa Pola
+
+# Cada hora: Milanuncios (JSON embebido, sin bloqueo) + pisos.com (Playwright,
+# sin necesitar técnicas de evasión), alquiler de larga temporada hasta 750
+# €/mes. Avisa por Telegram de pisos nuevos, bajadas de precio y pisos que
+# vuelven a estar disponibles. historico.json guarda el estado y se commitea
+# de vuelta, igual que en BotViajes/HotelBot.
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: buscapiso-loop
+  cancel-in-progress: false
+
+jobs:
+  vigilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Instalar el navegador
+        run: playwright install --with-deps chromium
+
+      - name: Vigilar
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: python -u casabot.py
+
+      - name: Publicar el histórico
+        if: always()
+        run: |
+          git config user.email "bot@users.noreply.github.com"
+          git config user.name "BuscaPisoBot"
+          git add historico.json
+          if git diff --cached --quiet; then
+            echo "sin cambios que publicar"
+            exit 0
+          fi
+          git commit -m "chore: estado de pisos actualizado"
+          git fetch origin main
+          if ! git rebase origin/main; then
+            git rebase --abort
+            echo "conflicto al rebasar; se reintenta la próxima hora"
+            exit 0
+          fi
+          git push origin HEAD:main || echo "push falló; se reintenta la próxima hora"
