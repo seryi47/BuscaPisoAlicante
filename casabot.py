@@ -23,6 +23,7 @@ pendientes de que el usuario decida cómo abordarlas: Idealista (confirmado
 403 incluso con Playwright honesto, sin huella), Habitaclia, Fotocasa,
 Yaencontre. Ver PROYECTO.md.
 """
+import html
 import json
 import os
 import re
@@ -33,6 +34,14 @@ import requests
 from playwright.sync_api import sync_playwright
 
 from notifier import Notifier
+
+
+def _esc(s):
+    """Escapa para Telegram (parse_mode=HTML). Título y municipio vienen de
+    anuncios scrapeados (texto que no controlamos); si uno trae un '<' o '&'
+    suelto rompe el parseo HTML y el aviso entero no se entrega. Mismo bug ya
+    encontrado y arreglado en botviajes/engine.py — aplicarlo aquí también."""
+    return html.escape(str(s or ""), quote=False)
 
 RAIZ = os.path.dirname(os.path.abspath(__file__))
 HISTORICO = os.path.join(RAIZ, "historico.json")
@@ -216,8 +225,8 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
 # ---- filtros y dedupe cruzado -------------------------------------------------
 
 def aplica_filtros(p, cfg):
-    if p["precio"] > cfg["precio_max"]:
-        return False
+    if not (0 < p["precio"] <= cfg["precio_max"]):
+        return False        # 0 €, negativo o NaN: no es un precio real
     if cfg.get("habitaciones_min") and (p["habitaciones"] or 0) < cfg["habitaciones_min"]:
         return False
     if cfg.get("m2_min") and (p["m2"] or 0) < cfg["m2_min"]:
@@ -248,7 +257,14 @@ def main():
     try:
         with open(HISTORICO, encoding="utf-8") as fh:
             historico = json.load(fh)
-    except Exception:
+    except FileNotFoundError:
+        historico = {}
+    except Exception as e:
+        # Si el fichero existe pero está corrupto (truncado a media escritura)
+        # y esto fallara en silencio, TODOS los pisos ya conocidos se tratarían
+        # como nuevos en este ciclo. No es grave (solo repite avisos), pero
+        # debe quedar visible en el log, no silenciado como si no pasara nada.
+        print("  [aviso] historico.json no se pudo leer (%s); empiezo de cero" % e)
         historico = {}
 
     notifier = Notifier()
@@ -272,9 +288,10 @@ def main():
     for p in todos:
         vistos_ahora.add(p["id"])
         anterior = historico.get(p["id"])
+        titulo = _esc(p["titulo"])
         pp_hab = ("%d hab." % p["habitaciones"]) if p["habitaciones"] else "hab. sin especificar"
         pp_m2 = ("%d m²" % p["m2"]) if p["m2"] else "m² sin especificar"
-        ficha = "%s · %s · %s" % (p["municipio"], pp_hab, pp_m2)
+        ficha = "%s · %s · %s" % (_esc(p["municipio"]), pp_hab, pp_m2)
 
         if anterior is None:
             historico[p["id"]] = {
@@ -284,14 +301,14 @@ def main():
                 "visto": time.strftime("%Y-%m-%d %H:%M"),
             }
             avisos.append("🆕 <b>Piso nuevo</b> (%s)\n<b>%s</b>\n%s\n%.0f €/mes\n👉 <a href=\"%s\">Ver anuncio</a>"
-                          % (p["fuente"], p["titulo"], ficha, p["precio"], p["url"]))
+                          % (p["fuente"], titulo, ficha, p["precio"], p["url"]))
             continue
 
         if not anterior.get("activo", True):
             # Había desaparecido de la búsqueda y ha vuelto a aparecer.
             anterior["activo"] = True
             avisos.append("🔁 <b>Disponible de nuevo</b> (%s)\n<b>%s</b>\n%s\n%.0f €/mes\n👉 <a href=\"%s\">Ver anuncio</a>"
-                          % (p["fuente"], p["titulo"], ficha, p["precio"], p["url"]))
+                          % (p["fuente"], titulo, ficha, p["precio"], p["url"]))
 
         precio_viejo = anterior["precio"]
         anterior["maximo"] = max(anterior.get("maximo", precio_viejo), p["precio"])
@@ -301,7 +318,7 @@ def main():
             anterior["suelo_avisado"] = p["precio"]
             avisos.append("📉 <b>Bajada de precio</b> (%s)\n<b>%s</b>\n%s\nAntes %.0f € → ahora <b>%.0f €</b>\n"
                           "Mínimo visto: %.0f €\n👉 <a href=\"%s\">Ver anuncio</a>"
-                          % (p["fuente"], p["titulo"], ficha, precio_viejo, p["precio"],
+                          % (p["fuente"], titulo, ficha, precio_viejo, p["precio"],
                              anterior["minimo"], p["url"]))
         anterior["precio"] = p["precio"]
         anterior["visto"] = time.strftime("%Y-%m-%d %H:%M")
