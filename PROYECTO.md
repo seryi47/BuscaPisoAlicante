@@ -11,6 +11,11 @@ Actions; público es además el mismo patrón que BotViajes/HotelBot, minutos
 ilimitados gratis). Workflow horario (`cron: "0 * * * *"`) corriendo de
 verdad: primer ciclo real en GitHub Actions confirmado, mismos 10 pisos
 genuinos que en local, "sin novedades" correctamente (ya los conocía).
+Idealista: scraping descartado del todo (protección real + bloqueado por el
+clasificador + API oficial solo para socios); en su lugar, `idealista_relay.py`
+ya está escrito y conectado al workflow, a falta de que el usuario guarde la
+búsqueda en su cuenta de Idealista y dé de alta `GMAIL_ADDRESS`/
+`GMAIL_APP_PASSWORD`.
 
 ## El encargo
 
@@ -43,33 +48,44 @@ Probado uno a uno, sin inventar nada:
 | **Habitaclia** | ❌ Bloqueado | 403, misma familia de protección que Idealista. No probado con técnicas de evasión (mismo motivo que Idealista). |
 | **Fotocasa** | ❌ Bloqueado | 403 de CloudFront incluso con Playwright headless SIN ninguna huella especial — tiene WAF real, no es solo una SPA en JS como parecía al principio. |
 | **Yaencontre** | ❌ Bloqueado | 403 con reto de **DataDome** explícito (`captcha-delivery.com`). Misma familia que Idealista. |
+| **easyrentalicante.com** | ❌ Bloqueado | 403 de Cloudflare (la web corre sobre la plataforma "id1.io", de uso común entre inmobiliarias pequeñas en España), confirmado también con Playwright honesto sin huella. Misma familia que los anteriores. |
 
-## Decisión pendiente: Idealista (y Habitaclia/Yaencontre)
+## Idealista: decisión tomada — scraping descartado, relé de email en su lugar
 
-El usuario dijo "tienes total permiso para todo", pero el bloqueo de
-Idealista no es una cuestión de permiso conceptual: el propio harness de
-Claude Code lo impidió en tiempo real con un mensaje explícito de
-"Bot Check Circumvention" y me pide parar y preguntar, no insistir. Opciones,
-de más a menos sencilla:
+El usuario pidió explícitamente evaluar TODAS las opciones existentes antes
+de descartar nada, sin pagar a ningún servicio de terceros (Apify/Bright
+Data quedan fuera por eso, no solo por el coste). Investigado a fondo:
 
-1. **El usuario añade una regla de permiso Bash** en su configuración de
-   Claude Code para este tipo de acción (se lo explica el propio mensaje de
-   bloqueo). Con eso, reintentar `curl_cffi impersonate="chrome"` podría
-   funcionar igual que con Vueling/Transavia en BotViajes — no está garantizado,
-   Idealista tiene protección más agresiva (probablemente PerimeterX/Akamai).
-2. **Apify / Bright Data** (servicios de pago especializados en saltar estas
-   protecciones de forma gestionada): es justo lo que la documentación de
-   `inmoradar` ya había identificado como el camino correcto para Idealista.
-   Tiene coste mensual.
-3. **API oficial de Idealista** (`developers.idealista.com`): de acceso
-   comercial, requiere solicitud y aprobación, pensada para empresas, no para
-   un particular buscando piso. Probablemente no viable o muy lenta.
-4. **Quedarse solo con Milanuncios + pisos.com** y aceptar que Idealista
-   (probablemente la fuente con más oferta) se revisa a mano de vez en cuando.
+1. **Saltar el bloqueo nosotros mismos** (`curl_cffi` + huella TLS, como con
+   Vueling/Booking en BotViajes): el propio clasificador de Claude Code lo
+   bloqueó en tiempo real como "Bot Check Circumvention", y confirmado aparte
+   con un Playwright honesto (sin ningún camuflaje) que el 403 es real, no
+   un falso positivo del clasificador siendo prudente. Descartado: construir
+   esa infraestructura de evasión, pagándola o no, sigue siendo evasión.
+2. **API oficial de Idealista** (`developers.idealista.com`): confirmado por
+   búsqueda externa que es **"Partner-only, approval required"** — acceso
+   solo a socios con aprobación caso por caso (inmobiliarias, portales), sin
+   autoservicio ni plan gratuito para un particular. Descartada.
+3. **RSS**: no hay rastro de que ningún portal grande lo siga ofreciendo.
+   Descartada.
+4. **El propio sistema de alertas de Idealista (guardar búsqueda + email)**
+   ✅ **esta es la vía elegida.** Es una función nativa, gratuita, pensada
+   para que cualquier usuario registrado la use así — no es scraping ni
+   evasión de ningún tipo, es Idealista avisando a su propio usuario. El
+   usuario guarda la búsqueda (zona + precio) en su cuenta y activa las
+   alertas por email; `idealista_relay.py` lee esos correos por IMAP (con
+   una contraseña de aplicación de Gmail, nunca la contraseña normal) y
+   reenvía lo que encuentra al mismo Telegram, con el mismo formato que el
+   resto de avisos. Cero peticiones a idealista.com.
 
-No se ha tomado ninguna decisión por el usuario: hay que preguntarle.
-Dato nuevo: probado con Playwright honesto (sin huella), Idealista sigue
-dando 403 — el bloqueo es real, no solo el clasificador siendo prudente.
+**Pendiente de primer uso real**: el formato exacto del correo de alerta de
+Idealista no se ha visto todavía (no hay cuenta de prueba a mano), así que
+`idealista_relay.py` asume un formato razonable (enlaces
+`idealista.com/inmueble/<id>` con un precio en € cerca) que **hay que
+verificar y afinar en cuanto llegue el primer correo real** — ver
+`_parsear_correo()` en el código. El script ya está conectado al workflow
+horario (se omite solo, sin fallar el job, si `GMAIL_ADDRESS`/
+`GMAIL_APP_PASSWORD` no están configurados todavía).
 
 ## Bloqueos del clasificador de Claude Code durante esta sesión
 
@@ -162,8 +178,27 @@ piso en Milanuncios y pisos.com el mismo día).
 - [x] **Primer ciclo real confirmado en la nube** (`workflow_dispatch`
       manual): mismos 10 pisos genuinos que en local, "sin novedades"
       correctamente (deduplicación contra el histórico funcionando).
-- [ ] Decisión del usuario sobre Idealista (ver arriba) — único punto
-      todavía abierto.
+- [x] Decisión sobre Idealista tomada: scraping/evasión descartado del
+      todo, relé de email nativo en su lugar (ver sección dedicada arriba).
+- [x] `idealista_relay.py` escrito y conectado al workflow horario (se omite
+      solo si no hay credenciales, no hace fallar el job).
+- [x] Revisada la web de la agencia `easyrentalicante.com` (pedido por el
+      usuario): también bloqueada por protección real (Cloudflare vía la
+      plataforma id1.io), confirmado con Playwright honesto. Mismo trato que
+      el resto de fuentes bloqueadas: no se fuerza.
+- [ ] **Falta del usuario para que el relé de Idealista funcione de
+      verdad:**
+      1. Guardar la búsqueda (zona Alicante/Santa Pola + ≤750 €) en su
+         cuenta de Idealista y activar las alertas por email.
+      2. Generar una contraseña de aplicación de Gmail
+         (myaccount.google.com/apppasswords) y darla de alta como
+         `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD` (secretos del repo — mismo
+         paso manual que con el token de Telegram, bloqueado para mí por
+         "Secret-Store Writes").
+      3. **Reenviarme el primer correo real de Idealista** en cuanto
+         llegue: el parser (`_parsear_correo()`) está escrito a ciegas sobre
+         un formato supuesto y necesita verificarse/afinarse contra un
+         correo de verdad antes de confiar en él del todo.
 - [ ] Opcional: filtro geográfico exacto contra el polígono decodificado en
       vez de la lista de municipios por nombre (pisos.com ya trae
       coordenadas en su JSON-LD; Milanuncios no las expone en el listado).
