@@ -432,11 +432,27 @@ def main():
     elif not destino:
         print("  %d avisos generados pero TELEGRAM_CHAT_ID no está configurado" % len(avisos))
     else:
-        texto = "\n\n".join(avisos[:8])
-        if len(avisos) > 8:
-            texto += "\n\n... y %d más." % (len(avisos) - 8)
-        ok = notifier.telegram(destino, texto)
-        print("  %d avisos (%d anuncios vigilados) -> enviado: %s" % (len(avisos), len(todos), ok))
+        # Antes se cortaba en 8 avisos con un "... y N más" que se tragaba
+        # el resto de enlaces. Ahora se manda TODO, repartido en tantos
+        # mensajes de Telegram como hagan falta (límite real de Telegram:
+        # 4096 caracteres por mensaje) en vez de ocultar información.
+        lotes, lote, largo = [], [], 0
+        for a in avisos:
+            if lote and largo + len(a) + 2 > 3500:
+                lotes.append(lote)
+                lote, largo = [], 0
+            lote.append(a)
+            largo += len(a) + 2
+        if lote:
+            lotes.append(lote)
+        ok = True
+        for i, lote in enumerate(lotes, 1):
+            texto = "\n\n".join(lote)
+            if len(lotes) > 1:
+                texto = "(%d/%d)\n\n%s" % (i, len(lotes), texto)
+            ok = notifier.telegram(destino, texto) and ok
+        print("  %d avisos en %d mensaje(s) (%d anuncios vigilados) -> enviado: %s"
+              % (len(avisos), len(lotes), len(todos), ok))
         if not ok:
             return 1
     return 0
