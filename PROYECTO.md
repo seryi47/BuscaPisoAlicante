@@ -3,10 +3,13 @@
 > Avisa por Telegram de pisos en alquiler de larga temporada en Alicante
 > ciudad y Santa Pola, hasta 750 €/mes.
 
-**Estado:** MVP funcionando con 2 de 6 fuentes posibles, repo publicado
-(`github.com/seryi47/BuscaPisoAlicante`, privado) y workflow horario listo.
-Falta el último paso para que avise de verdad en la nube: los secretos de
-Telegram (ver "Bloqueos del clasificador" más abajo).
+**Estado:** Validado de punta a punta en local, con un aviso REAL entregado
+(10 pisos genuinos en Alicante/Santa Pola, 490-750 €). Bot de Telegram
+dedicado: **@pisos_married_bot** (no el de BotViajes). Repo publicado
+(`github.com/seryi47/BuscaPisoAlicante`, privado), workflow horario listo.
+Falta un solo paso para que avise en la nube: los secretos de Telegram (ver
+"Bloqueos del clasificador" más abajo) — bloqueado para mí, lo tiene que
+hacer el usuario.
 
 ## El encargo
 
@@ -134,12 +137,27 @@ piso en Milanuncios y pisos.com el mismo día).
       descripción libre del anuncio, no de la zona estructurada (un piso en
       Ibi y otro en Castalla —ambos pueblos de interior— se colaban como
       "alicante").
+- [x] Bug real encontrado y arreglado: pisos.com deja de respetar el filtro
+      de precio pasadas unas páginas (llegó a devolver pisos de 3.000 €/mes);
+      resuelto ordenando ascendente (`/asc/`) y parando en cuanto una página
+      entera no trae nada dentro de presupuesto.
+- [x] **Validado de punta a punta con un envío real**: bot dedicado
+      `@pisos_married_bot` + tu chat_id de Telegram, 10 pisos genuinos
+      entregados de verdad (490-750 €, Alicante/Santa Pola).
 - [ ] Decisión del usuario sobre Idealista (ver arriba).
 - [ ] **Pegar `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` como secretos del
-      repo** — bloqueado por el clasificador, lo tiene que hacer el usuario
-      (ver "Bloqueos del clasificador" arriba). Sin esto el workflow en la
-      nube no puede avisar todavía.
-- [ ] Primer `workflow_dispatch` manual para confirmar un ciclo real en la nube.
+      repo** — bloqueado por el clasificador para mí (ver "Bloqueos del
+      clasificador" arriba), lo tiene que hacer el usuario. El `.env` local
+      de ESTE proyecto (no el de BotViajes: es un bot de Telegram distinto,
+      dedicado) ya tiene los valores correctos; comando de una línea cada
+      uno, sin necesidad de ver ni teclear el token:
+      ```sh
+      cd ~/Desktop/OrbitaLabs/buscapiso-alicante
+      grep '^TELEGRAM_BOT_TOKEN=' .env | cut -d= -f2- | gh secret set TELEGRAM_BOT_TOKEN -R seryi47/BuscaPisoAlicante
+      grep '^TELEGRAM_CHAT_ID=' .env | cut -d= -f2- | gh secret set TELEGRAM_CHAT_ID -R seryi47/BuscaPisoAlicante
+      ```
+- [ ] Primer `workflow_dispatch` manual para confirmar un ciclo real en la nube
+      (en cuanto existan los secretos).
 - [ ] Opcional: filtro geográfico exacto contra el polígono decodificado en
       vez de la lista de municipios por nombre (pisos.com ya trae
       coordenadas en su JSON-LD; Milanuncios no las expone en el listado).
