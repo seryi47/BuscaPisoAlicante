@@ -64,9 +64,25 @@ _RE_TEMPORAL = re.compile(
     r"|corta\s+estancia"
     r"|corta\s+duraci[oó]n"
     r"|uso\s+distinto"
-    + r"|de\s+(?:" + _MESES + r")\s+a\s+(?:" + _MESES + r")"
+    + r"|\b(?:" + _MESES + r")\b[^.!?]{0,50}\b(?:" + _MESES + r")\b"
     + r"|curso\s+(?:acad[ée]mico|escolar)"
     r"|a[ñn]o\s+acad[ée]mico",
+    re.IGNORECASE,
+)
+# Filtro duro de piso compartido (igual que en casabot.py): nada de
+# habitación suelta en piso compartido, solo el piso/casa/bungalow entero.
+_RE_COMPARTIDO = re.compile(
+    r"\b(?:piso|apartamento|estudio|vivienda|casa|chalet|bungal[oó]w?)\s+a\s+compartir\b"
+    r"|\bcompartir\s+(?:piso|apartamento|estudio|vivienda|casa|chalet|bungal[oó]w?)\b"
+    r"|\b(?:piso|apartamento|estudio|vivienda|casa|chalet|bungal[oó]w?)\s+compartid[oa]\b"
+    r"|\bco-?living\b"
+    r"|\bplaza\s+en\s+piso\b"
+    r"|\balquil[oa]\s+habitaci[oó]n\b"
+    r"|\bhabitaci[oó]n\s+en\s+alquiler\b"
+    r"|\bse\s+alquila\s+(?:la\s+)?habitaci[oó]n\b"
+    r"|\bhabitaci[oó]n\s+(?:individual|doble)\b"
+    r"|\bhabitaci[oó]n\b[^.!?]{0,40}\bcompartid[oa]s?\b"
+    r"|\bcompartid[oa]s?\b[^.!?]{0,40}\bhabitaci[oó]n\b",
     re.IGNORECASE,
 )
 
@@ -146,6 +162,9 @@ def _parsear_correo(msg_id, msg):
                 break
         if _RE_TEMPORAL.search(ventana):
             print("  [idealista_relay] descartado un inmueble por mención a temporada/vacacional")
+            continue
+        if _RE_COMPARTIDO.search(ventana):
+            print("  [idealista_relay] descartado un inmueble por ser habitación en piso compartido")
             continue
         out.append({
             "id": enlace.split("/inmueble/")[-1].split("/")[0].split("-")[0],

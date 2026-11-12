@@ -55,7 +55,7 @@ CONFIG = os.path.join(RAIZ, "config.json")
 UMBRAL = 1.0  # € de bajada mínima para que merezca un aviso
 MAX_PAGINAS_MILANUNCIOS = 40  # salvaguarda: la provincia entera son ~28 hoy
 MAX_PAGINAS_PISOSCOM = 20  # salvaguarda: hoy son ~10 páginas por zona
-MAX_PAGINAS_ENALQUILER = 20  # salvaguarda: hoy son ~14 páginas (211 ÷ 15)
+MAX_PAGINAS_ENALQUILER = 40  # salvaguarda: con todos los tipos mezclados (no solo "piso") hay más páginas que antes
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
@@ -80,22 +80,69 @@ _RE_TEMPORAL = re.compile(
     r"|corta\s+estancia"
     r"|corta\s+duraci[oó]n"
     r"|uso\s+distinto"
-    # Rango de meses tipo "de septiembre a junio": lo normal en un alquiler
-    # de vivienda habitual es NO mencionar fechas; cuando un anuncio da un
-    # rango concreto de meses es casi siempre un alquiler de curso
-    # académico o de temporada aunque no use esa palabra (caso real visto:
-    # "ALQUILER DE SEPTIEMBRE A JUNIO-PERIODO COMPLETO").
-    + r"|de\s+(?:" + _MESES + r")\s+a\s+(?:" + _MESES + r")"
+    # Dos nombres de mes a menos de 50 caracteres: un alquiler de vivienda
+    # habitual normal NUNCA menciona un rango de fechas. Dos casos reales
+    # vistos con redacciones distintas: "ALQUILER DE SEPTIEMBRE A
+    # JUNIO-PERIODO COMPLETO" y "ALQUILER DEL MES DE SEPTIEMBRE 2026 AL MES
+    # DE JUNIO 2027. NO SE ALQUILA PARA LOS MESES DE VERANO" — en vez de
+    # intentar cubrir cada redacción con una frase exacta, basta con mirar
+    # si aparecen dos meses distintos cerca el uno del otro.
+    + r"|\b(?:" + _MESES + r")\b[^.!?]{0,50}\b(?:" + _MESES + r")\b"
     + r"|curso\s+(?:acad[ée]mico|escolar)"
     r"|a[ñn]o\s+acad[ée]mico",
     re.IGNORECASE,
 )
+
+# Filtro duro: SOLO piso/casa/bungalow ENTERO, nada de habitación suelta en
+# piso compartido. "habitación" (singular) cerca de "compartid-" o frases
+# explícitas de alquiler de habitación son la señal; en plural
+# ("3 habitaciones") es solo el número de dormitorios del piso entero y no
+# cuenta (confirmado: pisos.com/enalquiler.com muestran el recuento de
+# dormitorios abreviado, "2 hab."/"2 Hab", nunca con la palabra completa).
+_RE_COMPARTIDO = re.compile(
+    r"\b(?:piso|apartamento|estudio|vivienda|casa|chalet|bungal[oó]w?)\s+a\s+compartir\b"
+    r"|\bcompartir\s+(?:piso|apartamento|estudio|vivienda|casa|chalet|bungal[oó]w?)\b"
+    r"|\b(?:piso|apartamento|estudio|vivienda|casa|chalet|bungal[oó]w?)\s+compartid[oa]\b"
+    r"|\bco-?living\b"
+    r"|\bplaza\s+en\s+piso\b"
+    r"|\balquil[oa]\s+habitaci[oó]n\b"
+    r"|\bhabitaci[oó]n\s+en\s+alquiler\b"
+    r"|\bse\s+alquila\s+(?:la\s+)?habitaci[oó]n\b"
+    r"|\bhabitaci[oó]n\s+(?:individual|doble)\b"
+    r"|\bhabitaci[oó]n\b[^.!?]{0,40}\bcompartid[oa]s?\b"
+    r"|\bcompartid[oa]s?\b[^.!?]{0,40}\bhabitaci[oó]n\b",
+    re.IGNORECASE,
+)
+
+# Filtro duro de anuncios de "se busca" (alguien que busca piso, no lo
+# ofrece): visto en vivo en Milanuncios, un anuncio con título "Maria" y
+# URL ".../busco-estudio-o-piso-para-alquilar-...htm" — no es una vivienda
+# disponible, es ruido que no debería contar como "encaja" en nada.
+_RE_DEMANDA = re.compile(
+    r"\bbusco\b"
+    r"|\bbuscamos\b"
+    r"|\bse\s+busca\b"
+    r"|\bnecesito\s+(?:piso|alquiler|vivienda|apartamento|estudio|habitaci[oó]n)\b",
+    re.IGNORECASE,
+)
+
+
+def es_demanda(*textos):
+    """True si alguno de los textos es un anuncio de "busco piso/vivienda"
+    en vez de una oferta de alquiler real."""
+    return any(_RE_DEMANDA.search(t) for t in textos if t)
 
 
 def es_temporal(*textos):
     """True si CUALQUIERA de los textos dados menciona alquiler de
     temporada/vacacional/turístico. Basta con que aparezca en uno solo."""
     return any(_RE_TEMPORAL.search(t) for t in textos if t)
+
+
+def es_compartido(*textos):
+    """True si CUALQUIERA de los textos dados es una habitación en piso
+    compartido en vez del piso/casa entero."""
+    return any(_RE_COMPARTIDO.search(t) for t in textos if t)
 
 
 def cargar_config():
@@ -107,9 +154,17 @@ def cargar_config():
 
 _RE_PROPS = re.compile(r'window\.__INITIAL_PROPS__ = JSON\.parse\("(.*?)"\);</script>', re.DOTALL)
 
+# Dos categorías de Milanuncios, cada una a nivel de TODA la provincia de
+# Alicante (igual que antes); el filtrado a los municipios concretos se
+# hace después en buscar_milanuncios(), como ya se hacía solo con "pisos".
+MILANUNCIOS_CATEGORIAS = (
+    "https://www.milanuncios.com/alquiler-de-pisos-en-alicante/",
+    "https://www.milanuncios.com/alquiler-de-chalets-en-alicante/",
+)
 
-def _milanuncios_pagina(n):
-    url = "https://www.milanuncios.com/alquiler-de-pisos-en-alicante/"
+
+def _milanuncios_pagina(url_base, n):
+    url = url_base
     if n > 1:
         url += "?pagina=%d" % n
     r = requests.get(url, headers={"User-Agent": UA}, timeout=25)
@@ -139,15 +194,19 @@ def _milanuncios_pagina(n):
 def buscar_milanuncios(municipios_validos):
     out = []
     descartados_temporada = 0
-    ads, total = _milanuncios_pagina(1)
-    paginas = min(total, MAX_PAGINAS_MILANUNCIOS)
-    todas = list(ads)
-    for n in range(2, paginas + 1):
-        more, _ = _milanuncios_pagina(n)
-        if not more:
-            break
-        todas.extend(more)
-        time.sleep(1.5)
+    descartados_compartido = 0
+    descartados_demanda = 0
+    todas = []
+    for url_base in MILANUNCIOS_CATEGORIAS:
+        ads, total = _milanuncios_pagina(url_base, 1)
+        paginas = min(total, MAX_PAGINAS_MILANUNCIOS)
+        todas.extend(ads)
+        for n in range(2, paginas + 1):
+            more, _ = _milanuncios_pagina(url_base, n)
+            if not more:
+                break
+            todas.extend(more)
+            time.sleep(1.5)
     for a in todas:
         ciudad = ((a.get("location") or {}).get("city") or {}).get("name") or ""
         if not any(muni.lower() in ciudad.lower() or ciudad.lower() in muni.lower()
@@ -157,8 +216,16 @@ def buscar_milanuncios(municipios_validos):
         if precio is None:
             continue
         titulo = a.get("seoTitle") or a.get("title") or ciudad
-        if es_temporal(titulo, a.get("description")):
+        descripcion = a.get("description")
+        url_anuncio = a.get("url") or ""
+        if es_temporal(titulo, descripcion):
             descartados_temporada += 1
+            continue
+        if es_compartido(titulo, descripcion):
+            descartados_compartido += 1
+            continue
+        if es_demanda(titulo, descripcion, url_anuncio):
+            descartados_demanda += 1
             continue
         tags = {t.get("type"): t.get("text") for t in (a.get("tags") or [])}
         hab = tags.get("dormitorios")
@@ -176,6 +243,10 @@ def buscar_milanuncios(municipios_validos):
         })
     if descartados_temporada:
         print("  [milanuncios] %d descartados por ser de temporada/vacacional" % descartados_temporada)
+    if descartados_compartido:
+        print("  [milanuncios] %d descartados por ser habitación en piso compartido" % descartados_compartido)
+    if descartados_demanda:
+        print("  [milanuncios] %d descartados por ser anuncios de \"se busca\" (no ofrecen piso)" % descartados_demanda)
     return out
 
 
@@ -197,6 +268,7 @@ def _pisos_pagina(pg, url_base, n):
 def buscar_pisos_com(urls, municipios_validos, precio_max):
     out = []
     descartados_temporada = 0
+    descartados_compartido = 0
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True)
         pg = b.new_page(user_agent=UA)
@@ -245,6 +317,9 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
                     if es_temporal(t):
                         descartados_temporada += 1
                         continue
+                    if es_compartido(t):
+                        descartados_compartido += 1
+                        continue
                     href = None
                     try:
                         href = c.locator("a").first.get_attribute("href")
@@ -281,6 +356,8 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
         b.close()
     if descartados_temporada:
         print("  [pisos.com] %d descartados por ser de temporada/vacacional" % descartados_temporada)
+    if descartados_compartido:
+        print("  [pisos.com] %d descartados por ser habitación en piso compartido" % descartados_compartido)
     return out
 
 
@@ -289,13 +366,20 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
 _RE_PRECIO_ENQ = re.compile(r"\d+/\d+\s*(\d+)\s*€")
 _RE_M2_ENQ = re.compile(r"(\d+)\s*m2")
 _RE_HAB_ENQ = re.compile(r"(\d+)\s*Hab")
-_RE_MUNICIPIO_ENQ = re.compile(r"/alquiler_piso_([a-z0-9_-]+)/")
+# Sin "tipo=" en la URL, enalquiler.com devuelve TODOS los tipos mezclados
+# (piso, ático, dúplex, estudio, loft, "Casa / Chalet" -bungalow incluido-)
+# en vez de solo pisos; confirmado comparando resultados con y sin el
+# parámetro. El slug de cada anuncio cambia según el tipo
+# ("/alquiler_piso_...", "/alquiler_casa_...", "/alquiler_atico_..."), así
+# que el municipio ya no se puede buscar solo tras "alquiler_piso_".
+_RE_MUNICIPIO_ENQ = re.compile(r"/alquiler_[a-z]+_([a-z0-9_-]+)/")
 
 
 def buscar_enalquiler(municipios_validos, precio_max):
     out = []
     descartados_temporada = 0
-    url_base = "https://www.enalquiler.com/search?provincia=3&tipo=2&precio_max=%d" % precio_max
+    descartados_compartido = 0
+    url_base = "https://www.enalquiler.com/search?provincia=3&precio_max=%d" % precio_max
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True)
         pg = b.new_page(user_agent=UA)
@@ -333,6 +417,9 @@ def buscar_enalquiler(municipios_validos, precio_max):
                 if es_temporal(t):
                     descartados_temporada += 1
                     continue
+                if es_compartido(t):
+                    descartados_compartido += 1
+                    continue
                 mp = _RE_PRECIO_ENQ.search(t)
                 if not mp:
                     continue
@@ -359,6 +446,8 @@ def buscar_enalquiler(municipios_validos, precio_max):
         b.close()
     if descartados_temporada:
         print("  [enalquiler] %d descartados por ser de temporada/vacacional" % descartados_temporada)
+    if descartados_compartido:
+        print("  [enalquiler] %d descartados por ser habitación en piso compartido" % descartados_compartido)
     return out
 
 

@@ -39,6 +39,16 @@ contestar): habitaciones, m², amueblado, tipo de vivienda — de momento
 **sin filtro duro** en esos campos (se muestran en cada aviso, no descartan
 el anuncio). Editable en `config.json` sin tocar código.
 
+Dos reglas duras añadidas después, a petición explícita del usuario:
+- **Nada de residencia temporal** ("ese filtro debe ser 100%"): ni aunque el
+  portal lo tenga metido en la categoría normal de alquiler. Ver `es_temporal()`
+  en `casabot.py`.
+- **Nada de habitación en piso compartido** ("busco alquilar todo el piso,
+  bungalow o casa"): solo la vivienda entera. Ver `es_compartido()` en
+  `casabot.py`. Esto además obligó a ampliar las 3 fuentes para que busquen
+  también casas/chalets/bungalows, no solo "pisos" (antes se estaba dejando
+  fuera esa categoría entera sin querer).
+
 ## Fuentes: qué funciona y qué no
 
 Probado uno a uno, sin inventar nada:
@@ -46,8 +56,8 @@ Probado uno a uno, sin inventar nada:
 | Portal | Estado | Cómo |
 |---|---|---|
 | **Milanuncios** | ⚠️ Funciona desde casa, bloqueado desde la nube | JSON embebido en la propia página (`window.__INITIAL_PROPS__`), un `requests.get` normal sin navegador. Cubre toda la provincia; se filtra por municipio en el código (`location.city.name`). **Sí tiene protección anti-bot real** (PerimeterX, página "Pardon Our Interruption"): saltó en local al hacer pruebas manuales en ráfaga, y **el primer ciclo real en GitHub Actions dio 403 directamente** (las IPs de datacenter de Azure/GitHub tienen peor fama que una IP residencial para este tipo de protección). El código ya distingue este bloqueo de un cambio de layout en el log. En la práctica, hoy la cobertura real en la nube la da pisos.com; Milanuncios es un extra que puede o no funcionar según el día. |
-| **pisos.com** | ✅ Funciona | Accesible con Playwright normal, sin ninguna técnica de evasión (confirmado: un headless plano sin huella de Chrome ya basta). Tiene URLs limpias con los filtros de precio y "alquiler residencial de larga estancia" ya aplicados de fábrica (`/alquiler-residencial/pisos-<zona>/hasta-750/`). |
-| **enalquiler.com** | ✅ Funciona | Portal especializado SOLO en alquiler (no venta), 18.403 anuncios activos en España. Encontrado inspeccionando las peticiones de red reales de su app Angular: `https://www.enalquiler.com/search?provincia=3&tipo=2&precio_max=750&page=N`, URL limpia y reutilizable. El municipio se saca del propio slug de la URL del anuncio (`/alquiler_piso_<municipio>/...`), no de texto libre — más fiable todavía que pisos.com, evita de raíz el bug de Ibi/Castalla. |
+| **pisos.com** | ✅ Funciona | Accesible con Playwright normal, sin ninguna técnica de evasión (confirmado: un headless plano sin huella de Chrome ya basta). Tiene URLs limpias con los filtros de precio y "alquiler residencial de larga estancia" ya aplicados de fábrica (`/alquiler-residencial/pisos-<zona>/hasta-750/`). Se busca también en la categoría `casas-<zona>` (pisos.com mete chalets/bungalows ahí), no solo `pisos-<zona>`. |
+| **enalquiler.com** | ✅ Funciona | Portal especializado SOLO en alquiler (no venta), 18.403 anuncios activos en España. Encontrado inspeccionando las peticiones de red reales de su app Angular: `https://www.enalquiler.com/search?provincia=3&precio_max=750&page=N` (sin `tipo=`, para traer TODOS los tipos mezclados: piso, ático, dúplex, estudio, loft y "Casa/Chalet" -bungalow incluido-; antes llevaba `tipo=2` y solo traía pisos). El municipio se saca del propio slug de la URL del anuncio (`/alquiler_<tipo>_<municipio>/...`), no de texto libre — más fiable todavía que pisos.com, evita de raíz el bug de Ibi/Castalla. |
 | **Idealista** | ❌ Bloqueado (confirmado a fondo) | 403 con fetch normal Y con Playwright headless **sin ninguna huella/evasión** (probado explícitamente, mismo resultado: 403, página vacía). No es un falso positivo del clasificador de Claude Code: Idealista bloquea de verdad, con o sin camuflaje. Un intento de saltarlo con `curl_cffi` + huella TLS de Chrome fue además **bloqueado explícitamente por el clasificador de Claude Code** ("Bot Check Circumvention"). Pendiente de que el usuario decida (ver abajo). |
 | **Habitaclia** | ❌ Bloqueado | 403, misma familia de protección que Idealista. No probado con técnicas de evasión (mismo motivo que Idealista). |
 | **Fotocasa** | ❌ Bloqueado | 403 de CloudFront incluso con Playwright headless SIN ninguna huella especial — tiene WAF real, no es solo una SPA en JS como parecía al principio. |
@@ -206,3 +216,20 @@ piso en Milanuncios y pisos.com el mismo día).
 - [ ] Opcional: filtro geográfico exacto contra el polígono decodificado en
       vez de la lista de municipios por nombre (pisos.com ya trae
       coordenadas en su JSON-LD; Milanuncios no las expone en el listado).
+- [x] **Filtro duro de residencia temporal al 100%** (pedido explícito del
+      usuario): `es_temporal()` en `casabot.py`/`idealista_relay.py` revisa
+      título+descripción+tarjeta completa en busca de
+      temporada/vacacional/turístico/corta estancia/uso distinto/curso
+      académico, y también de "dos meses mencionados cerca" (cubre
+      redacciones distintas vistas en vivo: "DE SEPTIEMBRE A JUNIO" y
+      "DEL MES DE SEPTIEMBRE... AL MES DE JUNIO"). Validado contra 147
+      anuncios reales descartados en una sola pasada.
+- [x] **Filtro duro de piso compartido** (pedido explícito del usuario,
+      "busco alquilar todo el piso, bungalow o casa"): `es_compartido()`
+      descarta habitación suelta en piso compartido sin tocar menciones de
+      zonas comunes compartidas (piscina/jardín/garaje), que sí son
+      normales en un piso/casa entera. Esto llevó a ampliar las 3 fuentes
+      para que busquen también casas/chalets/bungalows (antes solo
+      "pisos"): pisos.com añade la categoría `casas-<zona>`, enalquiler.com
+      quita el filtro `tipo=2` (ahora trae todos los tipos mezclados) y
+      Milanuncios añade la categoría de chalets.
