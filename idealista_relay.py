@@ -82,7 +82,9 @@ _RE_COMPARTIDO = re.compile(
     r"|\bse\s+alquila\s+(?:la\s+)?habitaci[oó]n\b"
     r"|\bhabitaci[oó]n\s+(?:individual|doble)\b"
     r"|\bhabitaci[oó]n\b[^.!?]{0,40}\bcompartid[oa]s?\b"
-    r"|\bcompartid[oa]s?\b[^.!?]{0,40}\bhabitaci[oó]n\b",
+    r"|\bcompartid[oa]s?\b[^.!?]{0,40}\bhabitaci[oó]n\b"
+    r"|\balquil\w*\s+por\s+habitaci(?:o|ó)n(?:es)?\b"
+    r"|\bhabitaci(?:o|ó)n(?:es)?\s+(?:simple|doble)s?\s+\d",
     re.IGNORECASE,
 )
 

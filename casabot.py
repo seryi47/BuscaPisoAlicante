@@ -110,7 +110,14 @@ _RE_COMPARTIDO = re.compile(
     r"|\bse\s+alquila\s+(?:la\s+)?habitaci[oó]n\b"
     r"|\bhabitaci[oó]n\s+(?:individual|doble)\b"
     r"|\bhabitaci[oó]n\b[^.!?]{0,40}\bcompartid[oa]s?\b"
-    r"|\bcompartid[oa]s?\b[^.!?]{0,40}\bhabitaci[oó]n\b",
+    r"|\bcompartid[oa]s?\b[^.!?]{0,40}\bhabitaci[oó]n\b"
+    # Caso real encontrado (ficha completa, no en la tarjeta de resultados):
+    # "reformado y adaptado para alquiler por habitaciones... habitaciones
+    # dobles 450€/mes; habitación simple 350€/mes" — ni "compartido" ni
+    # "compartir" aparecían en ningún sitio, pero es exactamente lo que no
+    # se quiere (precio por habitación, no por el piso entero).
+    r"|\balquil\w*\s+por\s+habitaci(?:o|ó)n(?:es)?\b"
+    r"|\bhabitaci(?:o|ó)n(?:es)?\s+(?:simple|doble)s?\s+\d",
     re.IGNORECASE,
 )
 
@@ -258,6 +265,26 @@ _RE_M2 = re.compile(r"(\d+)\s*m²")
 _RE_ZONA = re.compile(r"\(([^()]*)\)")
 
 
+def _texto_completo_anuncio(pg, url):
+    """Visita la FICHA completa del anuncio (no la tarjeta recortada de la
+    lista de resultados) y devuelve todo su texto, o None si falla.
+
+    Caso real que obligó a esto: un anuncio con buen precio y pinta normal
+    en la tarjeta de resultados resultó decir en su ficha completa
+    "reformado y adaptado para alquiler por habitaciones... habitaciones
+    dobles 450€/mes; habitación simple 350€/mes" — nada de eso aparecía en
+    la tarjeta recortada, solo en la ficha. Sin visitar la ficha, el 100%
+    de filtrado que pidió el usuario era imposible de cumplir de verdad.
+    """
+    try:
+        pg.goto(url, timeout=45000, wait_until="domcontentloaded")
+        pg.wait_for_timeout(2000)
+        return " ".join(pg.locator("body").inner_text().split())
+    except Exception as e:
+        print("  [ficha] no se pudo cargar %s: %s" % (url, str(e)[:100]))
+        return None
+
+
 def _pisos_pagina(pg, url_base, n):
     url = url_base if n == 1 else (url_base.rstrip("/") + "/%d/" % n)
     pg.goto(url, timeout=45000, wait_until="domcontentloaded")
@@ -269,9 +296,14 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
     out = []
     descartados_temporada = 0
     descartados_compartido = 0
+    descartados_ficha = 0
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True)
         pg = b.new_page(user_agent=UA)
+        # Pestaña aparte dedicada a visitar la ficha completa de cada
+        # candidato, para no perder el sitio en la lista de resultados que
+        # `pg` está recorriendo.
+        pg_ficha = b.new_page(user_agent=UA)
         for url_base in urls:
             n = 1
             while n <= MAX_PAGINAS_PISOSCOM:
@@ -327,6 +359,16 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
                         pass
                     if not href:
                         continue
+                    # La tarjeta de resultados viene recortada: hay texto
+                    # (p.ej. "adaptado para alquiler por habitaciones" con
+                    # precio por habitación) que solo aparece en la ficha
+                    # completa del anuncio. Si falla la carga, no se
+                    # descarta por eso (mejor un falso negativo ocasional
+                    # que perder resultados por un fallo de red puntual).
+                    texto_ficha = _texto_completo_anuncio(pg_ficha, "https://www.pisos.com" + href)
+                    if texto_ficha and (es_temporal(texto_ficha) or es_compartido(texto_ficha)):
+                        descartados_ficha += 1
+                        continue
                     titulo = t.split(municipio)[0].strip() if municipio else t[:60]
                     out.append({
                         "fuente": "pisos.com",
@@ -353,11 +395,14 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
                     break
                 n += 1
                 time.sleep(1)
+        pg_ficha.close()
         b.close()
     if descartados_temporada:
         print("  [pisos.com] %d descartados por ser de temporada/vacacional" % descartados_temporada)
     if descartados_compartido:
         print("  [pisos.com] %d descartados por ser habitación en piso compartido" % descartados_compartido)
+    if descartados_ficha:
+        print("  [pisos.com] %d descartados tras leer la ficha completa (no se veía en la tarjeta)" % descartados_ficha)
     return out
 
 
@@ -379,10 +424,12 @@ def buscar_enalquiler(municipios_validos, precio_max):
     out = []
     descartados_temporada = 0
     descartados_compartido = 0
+    descartados_ficha = 0
     url_base = "https://www.enalquiler.com/search?provincia=3&precio_max=%d" % precio_max
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True)
         pg = b.new_page(user_agent=UA)
+        pg_ficha = b.new_page(user_agent=UA)
         n = 1
         while n <= MAX_PAGINAS_ENALQUILER:
             try:
@@ -425,6 +472,13 @@ def buscar_enalquiler(municipios_validos, precio_max):
                     continue
                 mh = _RE_HAB_ENQ.search(t)
                 mm2 = _RE_M2_ENQ.search(t)
+                # La tarjeta de resultados viene recortada: hay texto que
+                # solo aparece en la ficha completa del anuncio (caso real:
+                # "alquiler por habitaciones" con precio por habitación).
+                texto_ficha = _texto_completo_anuncio(pg_ficha, href)
+                if texto_ficha and (es_temporal(texto_ficha) or es_compartido(texto_ficha)):
+                    descartados_ficha += 1
+                    continue
                 # El título real empieza justo después de "N Baño(s)"; todo
                 # lo de antes es la ficha (fotos, precio, m², habitaciones).
                 mb = re.search(r"\d+\s*Baños?\s*", t)
@@ -443,11 +497,14 @@ def buscar_enalquiler(municipios_validos, precio_max):
                 break
             n += 1
             time.sleep(1)
+        pg_ficha.close()
         b.close()
     if descartados_temporada:
         print("  [enalquiler] %d descartados por ser de temporada/vacacional" % descartados_temporada)
     if descartados_compartido:
         print("  [enalquiler] %d descartados por ser habitación en piso compartido" % descartados_compartido)
+    if descartados_ficha:
+        print("  [enalquiler] %d descartados tras leer la ficha completa (no se veía en la tarjeta)" % descartados_ficha)
     return out
 
 
