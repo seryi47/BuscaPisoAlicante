@@ -69,6 +69,8 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 # portal no es de fiar al 100%, así que esto se busca en TODO el texto
 # disponible (título + descripción + tarjeta completa), no solo en un
 # campo de "tipo de alquiler".
+_MESES = (r"enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|"
+          r"setiembre|octubre|noviembre|diciembre")
 _RE_TEMPORAL = re.compile(
     r"\btemporad[ao]s?\b"
     r"|\bvacacional(?:es)?\b"
@@ -77,7 +79,15 @@ _RE_TEMPORAL = re.compile(
     r"|\btemporal(?:es)?\b"
     r"|corta\s+estancia"
     r"|corta\s+duraci[oó]n"
-    r"|uso\s+distinto",
+    r"|uso\s+distinto"
+    # Rango de meses tipo "de septiembre a junio": lo normal en un alquiler
+    # de vivienda habitual es NO mencionar fechas; cuando un anuncio da un
+    # rango concreto de meses es casi siempre un alquiler de curso
+    # académico o de temporada aunque no use esa palabra (caso real visto:
+    # "ALQUILER DE SEPTIEMBRE A JUNIO-PERIODO COMPLETO").
+    + r"|de\s+(?:" + _MESES + r")\s+a\s+(?:" + _MESES + r")"
+    + r"|curso\s+(?:acad[ée]mico|escolar)"
+    r"|a[ñn]o\s+acad[ée]mico",
     re.IGNORECASE,
 )
 

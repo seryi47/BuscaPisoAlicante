@@ -53,6 +53,8 @@ _RE_LINK = re.compile(r"https?://(?:www\.)?idealista\.com/inmueble/\d+[^\s\"'<>]
 # búsqueda guardada en Idealista se configure como alquiler normal, algún
 # anuncio individual puede ser de temporada/vacacional y el propio correo
 # de alerta a veces lo menciona en el texto alrededor del enlace.
+_MESES = (r"enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|"
+          r"setiembre|octubre|noviembre|diciembre")
 _RE_TEMPORAL = re.compile(
     r"\btemporad[ao]s?\b"
     r"|\bvacacional(?:es)?\b"
@@ -61,7 +63,10 @@ _RE_TEMPORAL = re.compile(
     r"|\btemporal(?:es)?\b"
     r"|corta\s+estancia"
     r"|corta\s+duraci[oó]n"
-    r"|uso\s+distinto",
+    r"|uso\s+distinto"
+    + r"|de\s+(?:" + _MESES + r")\s+a\s+(?:" + _MESES + r")"
+    + r"|curso\s+(?:acad[ée]mico|escolar)"
+    r"|a[ñn]o\s+acad[ée]mico",
     re.IGNORECASE,
 )
 
