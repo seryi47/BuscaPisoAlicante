@@ -60,6 +60,33 @@ MAX_PAGINAS_ENALQUILER = 20  # salvaguarda: hoy son ~14 páginas (211 ÷ 15)
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
 
+# Filtro duro: NADA de residencia temporal, aunque el portal lo tenga
+# categorizado como "alquiler residencial". Se ha confirmado en vivo que
+# anuncios de Milanuncios metidos en la categoría normal de "alquiler de
+# pisos" llevan en su propia descripción cosas como "contrato de
+# arrendamiento de temporada, para personas que necesiten alojamiento
+# temporal" o "ALQUILER VACACIONAL Y DE TEMPORADA" — la categoría del
+# portal no es de fiar al 100%, así que esto se busca en TODO el texto
+# disponible (título + descripción + tarjeta completa), no solo en un
+# campo de "tipo de alquiler".
+_RE_TEMPORAL = re.compile(
+    r"\btemporad[ao]s?\b"
+    r"|\bvacacional(?:es)?\b"
+    r"|\btur[íi]stic[oa]s?\b"
+    r"|\bestacional(?:es)?\b"
+    r"|\btemporal(?:es)?\b"
+    r"|corta\s+estancia"
+    r"|corta\s+duraci[oó]n"
+    r"|uso\s+distinto",
+    re.IGNORECASE,
+)
+
+
+def es_temporal(*textos):
+    """True si CUALQUIERA de los textos dados menciona alquiler de
+    temporada/vacacional/turístico. Basta con que aparezca en uno solo."""
+    return any(_RE_TEMPORAL.search(t) for t in textos if t)
+
 
 def cargar_config():
     with open(CONFIG, encoding="utf-8") as fh:
@@ -101,6 +128,7 @@ def _milanuncios_pagina(n):
 
 def buscar_milanuncios(municipios_validos):
     out = []
+    descartados_temporada = 0
     ads, total = _milanuncios_pagina(1)
     paginas = min(total, MAX_PAGINAS_MILANUNCIOS)
     todas = list(ads)
@@ -118,6 +146,10 @@ def buscar_milanuncios(municipios_validos):
         precio = ((a.get("price") or {}).get("cashPrice") or {}).get("value")
         if precio is None:
             continue
+        titulo = a.get("seoTitle") or a.get("title") or ciudad
+        if es_temporal(titulo, a.get("description")):
+            descartados_temporada += 1
+            continue
         tags = {t.get("type"): t.get("text") for t in (a.get("tags") or [])}
         hab = tags.get("dormitorios")
         m2_txt = tags.get("metros cuadrados") or ""
@@ -125,13 +157,15 @@ def buscar_milanuncios(municipios_validos):
         out.append({
             "fuente": "milanuncios",
             "id": "milanuncios-%s" % a.get("id"),
-            "titulo": a.get("seoTitle") or a.get("title") or ciudad,
+            "titulo": titulo,
             "municipio": ciudad,
             "precio": float(precio),
             "habitaciones": int(hab) if hab and hab.isdigit() else None,
             "m2": int(m2.group()) if m2 else None,
             "url": "https://www.milanuncios.com" + (a.get("url") or ""),
         })
+    if descartados_temporada:
+        print("  [milanuncios] %d descartados por ser de temporada/vacacional" % descartados_temporada)
     return out
 
 
@@ -152,6 +186,7 @@ def _pisos_pagina(pg, url_base, n):
 
 def buscar_pisos_com(urls, municipios_validos, precio_max):
     out = []
+    descartados_temporada = 0
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True)
         pg = b.new_page(user_agent=UA)
@@ -192,6 +227,14 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
                     if municipios_validos and not any(
                             muni.lower() in municipio.lower() for muni in municipios_validos):
                         continue
+                    # Filtro duro de residencia temporal: pisos.com ya usa la
+                    # categoría "alquiler-residencial" en la URL, pero eso no
+                    # es garantía (un anunciante puede mencionar "temporada"
+                    # o "vacacional" en el propio texto igualmente). Se busca
+                    # en la tarjeta ENTERA, no solo en el título.
+                    if es_temporal(t):
+                        descartados_temporada += 1
+                        continue
                     href = None
                     try:
                         href = c.locator("a").first.get_attribute("href")
@@ -226,6 +269,8 @@ def buscar_pisos_com(urls, municipios_validos, precio_max):
                 n += 1
                 time.sleep(1)
         b.close()
+    if descartados_temporada:
+        print("  [pisos.com] %d descartados por ser de temporada/vacacional" % descartados_temporada)
     return out
 
 
@@ -239,6 +284,7 @@ _RE_MUNICIPIO_ENQ = re.compile(r"/alquiler_piso_([a-z0-9_-]+)/")
 
 def buscar_enalquiler(municipios_validos, precio_max):
     out = []
+    descartados_temporada = 0
     url_base = "https://www.enalquiler.com/search?provincia=3&tipo=2&precio_max=%d" % precio_max
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True)
@@ -274,6 +320,9 @@ def buscar_enalquiler(municipios_validos, precio_max):
                 if municipios_validos and not any(
                         muni.lower() in municipio.lower() for muni in municipios_validos):
                     continue
+                if es_temporal(t):
+                    descartados_temporada += 1
+                    continue
                 mp = _RE_PRECIO_ENQ.search(t)
                 if not mp:
                     continue
@@ -298,6 +347,8 @@ def buscar_enalquiler(municipios_validos, precio_max):
             n += 1
             time.sleep(1)
         b.close()
+    if descartados_temporada:
+        print("  [enalquiler] %d descartados por ser de temporada/vacacional" % descartados_temporada)
     return out
 
 

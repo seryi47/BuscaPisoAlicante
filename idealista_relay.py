@@ -49,6 +49,21 @@ REMITENTES = ("@idealista.com", "@mail.idealista.com", "@idealista.es")
 
 _RE_PRECIO = re.compile(r"([\d.,]+)\s*€")
 _RE_LINK = re.compile(r"https?://(?:www\.)?idealista\.com/inmueble/\d+[^\s\"'<>]*")
+# Filtro duro de residencia temporal (igual que en casabot.py): aunque la
+# búsqueda guardada en Idealista se configure como alquiler normal, algún
+# anuncio individual puede ser de temporada/vacacional y el propio correo
+# de alerta a veces lo menciona en el texto alrededor del enlace.
+_RE_TEMPORAL = re.compile(
+    r"\btemporad[ao]s?\b"
+    r"|\bvacacional(?:es)?\b"
+    r"|\btur[íi]stic[oa]s?\b"
+    r"|\bestacional(?:es)?\b"
+    r"|\btemporal(?:es)?\b"
+    r"|corta\s+estancia"
+    r"|corta\s+duraci[oó]n"
+    r"|uso\s+distinto",
+    re.IGNORECASE,
+)
 
 
 def _conectar():
@@ -116,6 +131,7 @@ def _parsear_correo(msg_id, msg):
     for enlace in enlaces:
         # Busca el precio en la misma línea que el enlace, o en las 2 de alrededor.
         precio = None
+        ventana = texto  # si no se localiza una línea propia, se revisa el correo entero
         for i, linea in enumerate(lineas):
             if enlace in linea or enlace[-12:] in linea:
                 ventana = " ".join(lineas[max(0, i - 2):i + 3])
@@ -123,6 +139,9 @@ def _parsear_correo(msg_id, msg):
                 if mp:
                     precio = mp.group(1).replace(".", "").replace(",", ".")
                 break
+        if _RE_TEMPORAL.search(ventana):
+            print("  [idealista_relay] descartado un inmueble por mención a temporada/vacacional")
+            continue
         out.append({
             "id": enlace.split("/inmueble/")[-1].split("/")[0].split("-")[0],
             "url": enlace,
