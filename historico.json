@@ -4,12 +4,13 @@
   "minimo": 490.0,
   "maximo": 490.0,
   "suelo_avisado": 490.0,
-  "activo": true,
+  "activo": false,
   "fuente": "pisos.com",
   "titulo": "1/6 NUEVO PREMIUM 490 €/mes Apartamento en calle de Rafael Escolano San Gabriel (",
   "url": "https://www.pisos.com/alquilar/apartamento-san_gabriel-68424038457_100500/",
   "municipio": "Distrito San Gabriel-El Palmeral-Urbanova. Alicante - Alacant",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "pisos.com-/alquilar/piso-varadero_santa_pola_est-67539196436_109800/": {
   "precio": 540.0,
@@ -21,7 +22,7 @@
   "titulo": "1/4 540 €/mes Piso en Avenida Catalanet, 43 Varadero-",
   "url": "https://www.pisos.com/alquilar/piso-varadero_santa_pola_est-67539196436_109800/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 18:45"
  },
  "pisos.com-/alquilar/apartamento-varadero_santa_pola_est-68356313181_109800/": {
   "precio": 540.0,
@@ -33,7 +34,7 @@
   "titulo": "1/4 540 €/mes Apartamento en Avenida Catalanet, 43 Varadero-",
   "url": "https://www.pisos.com/alquilar/apartamento-varadero_santa_pola_est-68356313181_109800/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 18:45"
  },
  "pisos.com-/alquilar/apartamento-gran_platja-53354290013_100500/": {
   "precio": 700.0,
@@ -45,32 +46,33 @@
   "titulo": "1/22 PREMIUM 700 €/mes Apartamento en Gran Playa Gran Platja (",
   "url": "https://www.pisos.com/alquilar/apartamento-gran_platja-53354290013_100500/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 18:45"
  },
  "pisos.com-/alquilar/apartamento-centre_port_platja_llevant-64254447353_108500/": {
   "precio": 700.0,
   "minimo": 700.0,
   "maximo": 700.0,
   "suelo_avisado": 700.0,
-  "activo": true,
+  "activo": false,
   "fuente": "pisos.com",
   "titulo": "1/28 PREMIUM 700 €/mes Apartamento en Centre-Port-Platja Llevant Centre-Port-Platja Llevant (",
   "url": "https://www.pisos.com/alquilar/apartamento-centre_port_platja_llevant-64254447353_108500/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "pisos.com-/alquilar/piso-santiago_bernabeu-61725175629_101800/": {
   "precio": 700.0,
   "minimo": 700.0,
   "maximo": 700.0,
   "suelo_avisado": 700.0,
-  "activo": true,
+  "activo": false,
   "fuente": "pisos.com",
   "titulo": "1/7 PREMIUM 700 €/mes Piso en Santiago Bernabéu Santiago Bernabéu (",
   "url": "https://www.pisos.com/alquilar/piso-santiago_bernabeu-61725175629_101800/",
   "municipio": "Santa Pola",
   "visto": "2026-11-12 10:40",
-  "baja_vista": "2026-11-11 16:56"
+  "baja_vista": "2026-11-12 18:45"
  },
  "pisos.com-/alquilar/piso-santiago_bernabeu-68401254525_100500/": {
   "precio": 750.0,
@@ -82,7 +84,7 @@
   "titulo": "1/10 NUEVO PREMIUM 750 €/mes Piso en",
   "url": "https://www.pisos.com/alquilar/piso-santiago_bernabeu-68401254525_100500/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 18:45"
  },
  "pisos.com-/alquilar/apartamento-tamarit_platja_lissa-69206206781_100500/": {
   "precio": 750.0,
@@ -94,31 +96,33 @@
   "titulo": "1/18 NUEVO PREMIUM 750 €/mes Apartamento en Tamarit Tamarit-Platja Lissa (",
   "url": "https://www.pisos.com/alquilar/apartamento-tamarit_platja_lissa-69206206781_100500/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 18:45"
  },
  "pisos.com-/alquilar/casa_adosada-tamarit_platja_lissa-65023893712_106500/": {
   "precio": 750.0,
   "minimo": 750.0,
   "maximo": 750.0,
   "suelo_avisado": 750.0,
-  "activo": true,
+  "activo": false,
   "fuente": "pisos.com",
   "titulo": "1/22 PREMIUM 750 €/mes Casa adosada en Tamarit-Platja Lissa Tamarit-Platja Lissa (",
   "url": "https://www.pisos.com/alquilar/casa_adosada-tamarit_platja_lissa-65023893712_106500/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "pisos.com-/alquilar/apartamento-centre_port_platja_llevant-65059573969_109300/": {
   "precio": 750.0,
   "minimo": 750.0,
   "maximo": 750.0,
   "suelo_avisado": 750.0,
-  "activo": true,
+  "activo": false,
   "fuente": "pisos.com",
   "titulo": "1/13 PREMIUM 750 €/mes Apartamento en",
   "url": "https://www.pisos.com/alquilar/apartamento-centre_port_platja_llevant-65059573969_109300/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "milanuncios-597915164": {
   "precio": 700.0,
@@ -242,96 +246,104 @@
   "minimo": 450.0,
   "maximo": 450.0,
   "suelo_avisado": 450.0,
-  "activo": true,
+  "activo": false,
   "fuente": "enalquiler.com",
   "titulo": "Alquiler piso Campoamor-carolinas-altozano Descubre tu nuevo hogar en este encantador piso compartido! Ubicado en la pla",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-campoamor-carolinas-altozano_6891630.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-campoamor-carolinas-altozano_6891628.html": {
   "precio": 470.0,
   "minimo": 470.0,
   "maximo": 470.0,
   "suelo_avisado": 470.0,
-  "activo": true,
+  "activo": false,
   "fuente": "enalquiler.com",
   "titulo": "Alquiler piso Campoamor-carolinas-altozano Descubre tu nuevo hogar en el corazón de Alicante! Esta luminosa habitación e",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-campoamor-carolinas-altozano_6891628.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-campoamor-carolinas-altozano_6881128.html": {
   "precio": 350.0,
   "minimo": 350.0,
   "maximo": 350.0,
   "suelo_avisado": 350.0,
-  "activo": true,
+  "activo": false,
   "fuente": "enalquiler.com",
   "titulo": "Alquiler piso Campoamor-carolinas-altozano ESTUPENDO PISO A COMPARTIR! Disponibles 2 dormitorios individuales: - C y D c",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-campoamor-carolinas-altozano_6881128.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-el-palmeral-urbanova-tabarca_7161886.html": {
   "precio": 490.0,
   "minimo": 490.0,
   "maximo": 490.0,
   "suelo_avisado": 490.0,
-  "activo": true,
+  "activo": false,
   "fuente": "enalquiler.com",
   "titulo": "Alquiler piso El palmeral-urbanova-tabarca Piso pequeño ideal para 1 persona tiene cocina americana conjunto con dormito",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-el-palmeral-urbanova-tabarca_7161886.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_santa-pola/alquiler-piso-aire-acondicionado-puerto_7140663.html": {
   "precio": 725.0,
   "minimo": 725.0,
   "maximo": 725.0,
   "suelo_avisado": 725.0,
-  "activo": true,
+  "activo": false,
   "fuente": "enalquiler.com",
   "titulo": "Alquiler piso aire acondicionado Puerto Planta Baja en Alquiler Temporal, en pleno centro de Santa Pola Alquiler de Sept",
   "url": "https://www.enalquiler.com/alquiler_piso_santa-pola/alquiler-piso-aire-acondicionado-puerto_7140663.html",
   "municipio": "santa pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-amueblado-el-palmeral-urbanova-tabarca_7109813.html": {
   "precio": 750.0,
   "minimo": 750.0,
   "maximo": 750.0,
   "suelo_avisado": 750.0,
-  "activo": true,
+  "activo": false,
   "fuente": "enalquiler.com",
   "titulo": "Alquiler piso amueblado El palmeral-urbanova-tabarca Precioso apartamento con vistas al mar totalmente reformado disponi",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-amueblado-el-palmeral-urbanova-tabarca_7109813.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-amueblado-campoamor-carolinas-altozano_7066432.html": {
   "precio": 450.0,
   "minimo": 450.0,
   "maximo": 450.0,
   "suelo_avisado": 450.0,
-  "activo": true,
+  "activo": false,
   "fuente": "enalquiler.com",
   "titulo": "Alquiler piso amueblado Campoamor-carolinas-altozano En venta piso ubicado en entreplanta con patio, reformado y adaptad",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-amueblado-campoamor-carolinas-altozano_7066432.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_santa-pola/alquiler-piso-terraza-puerto_7009918.html": {
   "precio": 625.0,
   "minimo": 625.0,
   "maximo": 625.0,
   "suelo_avisado": 625.0,
-  "activo": true,
+  "activo": false,
   "fuente": "enalquiler.com",
   "titulo": "Alquiler piso terraza Puerto (ALQUILER DE SEPTIEMBRE A JUNIO-PERIODO COMPLETO) APARTAMENTO EN URBANIZACIÓN DE LUJO EN SA",
   "url": "https://www.enalquiler.com/alquiler_piso_santa-pola/alquiler-piso-terraza-puerto_7009918.html",
   "municipio": "santa pola",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 10:40",
+  "baja_vista": "2026-11-12 18:45"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-amueblado-parque-avenidas-vistahermosa_6948631.html": {
   "precio": 750.0,
@@ -343,6 +355,54 @@
   "titulo": "1/9 750€ 42m2 Piso Alquiler piso amueblado Parque avenidas-vistahermosa Alquiler estudio todo equipado con zona comunita",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-amueblado-parque-avenidas-vistahermosa_6948631.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-12 10:40"
+  "visto": "2026-11-12 18:45"
+ },
+ "pisos.com-/alquilar/estudio-san_blas_castillo_de_san_fernando_san_blas-69227473802_100500/": {
+  "precio": 720.0,
+  "minimo": 720.0,
+  "maximo": 720.0,
+  "suelo_avisado": 720.0,
+  "activo": true,
+  "fuente": "pisos.com",
+  "titulo": "1/11 NUEVO PREMIUM 720 €/mes Estudio en Glorieta del Poeta Vicente Mojica San Blas (",
+  "url": "https://www.pisos.com/alquilar/estudio-san_blas_castillo_de_san_fernando_san_blas-69227473802_100500/",
+  "municipio": "Distrito San Blas-Castillo de San Fernando. Alicante - Alacant",
+  "visto": "2026-11-12 18:45"
+ },
+ "pisos.com-/alquilar/estudio-san_blas_castillo_de_san_fernando_san_blas-69221571336_100500/": {
+  "precio": 750.0,
+  "minimo": 750.0,
+  "maximo": 750.0,
+  "suelo_avisado": 750.0,
+  "activo": true,
+  "fuente": "pisos.com",
+  "titulo": "1/11 NUEVO PREMIUM 750 €/mes Estudio en Glorieta del Poeta Vicente Mojica San Blas (",
+  "url": "https://www.pisos.com/alquilar/estudio-san_blas_castillo_de_san_fernando_san_blas-69221571336_100500/",
+  "municipio": "Distrito San Blas-Castillo de San Fernando. Alicante - Alacant",
+  "visto": "2026-11-12 18:45"
+ },
+ "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-ascensor-san-blas-pau_7166668.html": {
+  "precio": 750.0,
+  "minimo": 750.0,
+  "maximo": 750.0,
+  "suelo_avisado": 750.0,
+  "activo": true,
+  "fuente": "enalquiler.com",
+  "titulo": "Alquiler piso ascensor San blas-pau ¡ESTUDIO TOTALMENTE REFORMADO A ESTRENAR EN EL CENTRO DE ALICANTE! DISPONIBILIDAD IN",
+  "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-ascensor-san-blas-pau_7166668.html",
+  "municipio": "alacant alicante",
+  "visto": "2026-11-12 18:45"
+ },
+ "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-ascensor-san-blas-pau_7166671.html": {
+  "precio": 720.0,
+  "minimo": 720.0,
+  "maximo": 720.0,
+  "suelo_avisado": 720.0,
+  "activo": true,
+  "fuente": "enalquiler.com",
+  "titulo": "Alquiler piso ascensor San blas-pau ¡ESTUDIO TOTALMENTE REFORMADO A ESTRENAR EN EL CENTRO DE ALICANTE! DISPONIBILIDAD IN",
+  "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-ascensor-san-blas-pau_7166671.html",
+  "municipio": "alacant alicante",
+  "visto": "2026-11-12 18:45"
  }
 }
