@@ -22,7 +22,7 @@
   "titulo": "1/4 540 €/mes Piso en Avenida Catalanet, 43 Varadero-",
   "url": "https://www.pisos.com/alquilar/piso-varadero_santa_pola_est-67539196436_109800/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 13:55"
  },
  "pisos.com-/alquilar/apartamento-varadero_santa_pola_est-68356313181_109800/": {
   "precio": 540.0,
@@ -34,7 +34,7 @@
   "titulo": "1/4 540 €/mes Apartamento en Avenida Catalanet, 43 Varadero-",
   "url": "https://www.pisos.com/alquilar/apartamento-varadero_santa_pola_est-68356313181_109800/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 13:55"
  },
  "pisos.com-/alquilar/apartamento-gran_platja-53354290013_100500/": {
   "precio": 700.0,
@@ -46,7 +46,7 @@
   "titulo": "1/22 PREMIUM 700 €/mes Apartamento en Gran Playa Gran Platja (",
   "url": "https://www.pisos.com/alquilar/apartamento-gran_platja-53354290013_100500/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 13:55"
  },
  "pisos.com-/alquilar/apartamento-centre_port_platja_llevant-64254447353_108500/": {
   "precio": 700.0,
@@ -84,7 +84,7 @@
   "titulo": "1/10 NUEVO PREMIUM 750 €/mes Piso en",
   "url": "https://www.pisos.com/alquilar/piso-santiago_bernabeu-68401254525_100500/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 13:55"
  },
  "pisos.com-/alquilar/apartamento-tamarit_platja_lissa-69206206781_100500/": {
   "precio": 750.0,
@@ -96,7 +96,7 @@
   "titulo": "1/18 NUEVO PREMIUM 750 €/mes Apartamento en Tamarit Tamarit-Platja Lissa (",
   "url": "https://www.pisos.com/alquilar/apartamento-tamarit_platja_lissa-69206206781_100500/",
   "municipio": "Santa Pola",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 13:55"
  },
  "pisos.com-/alquilar/casa_adosada-tamarit_platja_lissa-65023893712_106500/": {
   "precio": 750.0,
@@ -350,12 +350,13 @@
   "minimo": 750.0,
   "maximo": 750.0,
   "suelo_avisado": 750.0,
-  "activo": true,
+  "activo": false,
   "fuente": "enalquiler.com",
   "titulo": "1/9 750€ 42m2 Piso Alquiler piso amueblado Parque avenidas-vistahermosa Alquiler estudio todo equipado con zona comunita",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-amueblado-parque-avenidas-vistahermosa_6948631.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 05:39",
+  "baja_vista": "2026-11-13 13:55"
  },
  "pisos.com-/alquilar/estudio-san_blas_castillo_de_san_fernando_san_blas-69227473802_100500/": {
   "precio": 720.0,
@@ -367,7 +368,7 @@
   "titulo": "1/11 NUEVO PREMIUM 720 €/mes Estudio en Glorieta del Poeta Vicente Mojica San Blas (",
   "url": "https://www.pisos.com/alquilar/estudio-san_blas_castillo_de_san_fernando_san_blas-69227473802_100500/",
   "municipio": "Distrito San Blas-Castillo de San Fernando. Alicante - Alacant",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 13:55"
  },
  "pisos.com-/alquilar/estudio-san_blas_castillo_de_san_fernando_san_blas-69221571336_100500/": {
   "precio": 750.0,
@@ -379,7 +380,7 @@
   "titulo": "1/11 NUEVO PREMIUM 750 €/mes Estudio en Glorieta del Poeta Vicente Mojica San Blas (",
   "url": "https://www.pisos.com/alquilar/estudio-san_blas_castillo_de_san_fernando_san_blas-69221571336_100500/",
   "municipio": "Distrito San Blas-Castillo de San Fernando. Alicante - Alacant",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 13:55"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-ascensor-san-blas-pau_7166668.html": {
   "precio": 750.0,
@@ -391,7 +392,7 @@
   "titulo": "Alquiler piso ascensor San blas-pau ¡ESTUDIO TOTALMENTE REFORMADO A ESTRENAR EN EL CENTRO DE ALICANTE! DISPONIBILIDAD IN",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-ascensor-san-blas-pau_7166668.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 13:55"
  },
  "enalquiler.com-https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-ascensor-san-blas-pau_7166671.html": {
   "precio": 720.0,
@@ -403,6 +404,6 @@
   "titulo": "Alquiler piso ascensor San blas-pau ¡ESTUDIO TOTALMENTE REFORMADO A ESTRENAR EN EL CENTRO DE ALICANTE! DISPONIBILIDAD IN",
   "url": "https://www.enalquiler.com/alquiler_piso_alacant-alicante/alquiler-piso-ascensor-san-blas-pau_7166671.html",
   "municipio": "alacant alicante",
-  "visto": "2026-11-13 05:39"
+  "visto": "2026-11-13 13:55"
  }
 }
